@@ -1,46 +1,44 @@
 # Nombre de la action
 name: Build container and run VISE API testing
 
-# Bajo que acción se va a ejecutar la action (en este caso manual)
+# Ejecución manual del workflow
 on:
   workflow_dispatch:
-    # A la hora de ejecutar la acción pedir los siguientes atributos
     inputs:
       PORT:
         description: 'The port of your application'
         required: true
         default: "3000"
 
-# Tareas a ejecutar
 jobs:
   test:
-    # SO de la maquina virtual
     runs-on: ubuntu-latest
 
-    # Pasos a seguir
     steps:
       # Descargar el código del repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Instalar docker
+      # Configurar Docker Buildx
       - name: Setup docker
         uses: docker/setup-buildx-action@v3
 
-      # Construir imagen de docker
+      # Construir imagen Docker (Dockerfile en api-devops/app)
       - name: Build docker image
         run: |
-          docker build -t devops-api:latest .
+          docker build -t devops-api:latest -f api-devops/app/Dockerfile api-devops/app
+
       # Levantar contenedor
       - name: Run container
         run: |
           docker run -d -p ${{ github.event.inputs.PORT }}:${{ github.event.inputs.PORT }} --name devops-api-container devops-api
           sleep 5
-      # Instalar hurl
+
+      # Instalar Hurl (herramienta para pruebas de API)
       - name: Setup hurl (API testing tool)
         uses: gacts/install-hurl@v1
 
-      # Ejecutar pruebas con hurl
+      # Ejecutar pruebas Hurl
       - name: Test API
         run: |
           hurl --variable host=http://localhost:${{ github.event.inputs.PORT }} \
